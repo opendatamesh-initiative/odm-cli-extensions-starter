@@ -2,7 +2,7 @@ name: odm-cli-extensions-starter CI/CD
 
 on:
   release:
-    types: [created]
+    types: [ created ]
 
 jobs:
   verify-version:
@@ -53,14 +53,27 @@ jobs:
           java-version: '11'
           distribution: 'temurin'
           cache: maven
+      - name: Set up Maven settings
+        run: |
+          mkdir -p ~/.m2
+          echo "<settings>
+            <servers>
+              <server>
+                <id>odm-spec-parser-repo</id>
+                <username>your-github-username</username>
+                <password>${{ secrets.GITHUB_TOKEN }}</password>
+              </server>
+              <server>
+                <id>odm-cli-extensions-repo</id>
+                <username>your-github-username</username>
+                <password>${{ secrets.GITHUB_TOKEN }}</password>
+              </server>
+            </servers>
+          </settings>" > ~/.m2/settings.xml
       - name: Build the JAR package
         run: mvn clean package
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Upload JAR Artifact
         uses: actions/upload-artifact@v3
         with:
           name: odm-cli-extensions-starter-${{ env.MAVEN_VERSION }}.jar
           path: target/*.jar
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
