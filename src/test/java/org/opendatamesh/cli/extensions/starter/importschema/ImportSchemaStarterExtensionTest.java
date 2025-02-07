@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.Resources;
 import org.junit.Assert;
 import org.junit.Test;
+import org.opendatamesh.cli.extensions.importschema.ImportSchemaArguments;
 import org.opendatamesh.cli.extensions.importschema.ImportSchemaExtension;
-import org.opendatamesh.cli.extensions.importschema.ImportSchemaOptions;
 import org.opendatamesh.dpds.model.interfaces.PortDPDS;
 import org.opendatamesh.dpds.utils.ObjectMapperFactory;
 
@@ -21,17 +21,20 @@ public class ImportSchemaStarterExtensionTest {
         String SUPPORTED_TO = "port";
         Assert.assertTrue(importSchemaExtension.supports(SUPPORTED_FROM, SUPPORTED_TO));
 
-        ImportSchemaOptions importSchemaOptions = new ImportSchemaOptions();
-        importSchemaOptions.setCommandCliOutputParameters(
-                Map.of(
-                        "name", "port_name",
-                        "version", "1.0.0",
-                        "database", "demo_db",
-                        "schema", "demo_schema"
-                )
+        Map<String, String> internalParameters =  Map.of(
+                "portName", "port_name",
+                "portVersion", "1.0.0",
+                "databaseName", "demo_db",
+                "schemaName", "demo_schema"
         );
 
-        PortDPDS outputPort = importSchemaExtension.importElement(importSchemaOptions);
+        importSchemaExtension.getExtensionOptions()
+                        .forEach(extensionOption -> {
+                            String key = extensionOption.getNames().stream().findFirst().get().replace("-", "");
+                            extensionOption.getSetter().accept(internalParameters.get(key));
+                        });
+
+        PortDPDS outputPort = importSchemaExtension.importElement( new ImportSchemaArguments());
         PortDPDS expectedOutputPort = new ObjectMapper().readValue(
                 Resources.toByteArray(
                         getClass().getResource("test_import_schema_starter_extension_expected_output.json")

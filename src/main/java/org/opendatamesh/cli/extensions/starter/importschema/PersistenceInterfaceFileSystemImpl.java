@@ -3,7 +3,7 @@ package org.opendatamesh.cli.extensions.starter.importschema;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.opendatamesh.cli.extensions.importschema.ImportSchemaOptions;
+import org.opendatamesh.cli.extensions.importschema.ImportSchemaArguments;
 import org.opendatamesh.dpds.model.interfaces.PortDPDS;
 import org.opendatamesh.dpds.utils.ObjectMapperFactory;
 
@@ -18,13 +18,13 @@ class PersistenceInterfaceFileSystemImpl implements PersistenceInterface {
     private static final String OUTPUT_DIR = "ports/output/";
 
     @Override
-    public void saveOutputPort(ImportSchemaOptions importSchemaOptions, PortDPDS outputPort) {
+    public void saveOutputPort(ImportSchemaArguments importSchemaArguments, PortDPDS outputPort) {
         try {
             ObjectMapper mapper = ObjectMapperFactory.JSON_MAPPER;
             String outputPortPath = OUTPUT_DIR + outputPort.getName() + "/port.json";
             outputPort.setRef(outputPortPath);
             outputPort.setRawContent(" {\"$ref\": \"" + outputPortPath + "\"}");
-            File outputPortFile = new File(importSchemaOptions.getRootDescriptorPath().getParent().toFile(), outputPortPath);
+            File outputPortFile = new File(importSchemaArguments.getRootDescriptorPath().getParent().toFile(), outputPortPath);
             String portDefContent = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(outputPort);
             writeFile(outputPortFile.toPath(), portDefContent);
         } catch (JsonProcessingException e) {
@@ -33,11 +33,11 @@ class PersistenceInterfaceFileSystemImpl implements PersistenceInterface {
     }
 
     @Override
-    public void saveOutputPortApi(ImportSchemaOptions importSchemaOptions, PortDPDS outputPort, ObjectNode api) {
+    public void saveOutputPortApi(ImportSchemaArguments importSchemaArguments, PortDPDS outputPort, ObjectNode api) {
         try {
             ObjectMapper mapper = ObjectMapperFactory.JSON_MAPPER;
             String outputPortApiPath = OUTPUT_DIR + outputPort.getName() + "/api.json";
-            File outputPortApiFile = new File(importSchemaOptions.getRootDescriptorPath().getParent().toFile(), outputPortApiPath);
+            File outputPortApiFile = new File(importSchemaArguments.getRootDescriptorPath().getParent().toFile(), outputPortApiPath);
             writeFile(
                     outputPortApiFile.toPath(),
                     mapper.writerWithDefaultPrettyPrinter().writeValueAsString(api)
