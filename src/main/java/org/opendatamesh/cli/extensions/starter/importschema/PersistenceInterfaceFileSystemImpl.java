@@ -1,11 +1,14 @@
 package org.opendatamesh.cli.extensions.starter.importschema;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.introspect.Annotated;
+import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.opendatamesh.cli.extensions.importschema.ImportSchemaArguments;
 import org.opendatamesh.dpds.model.interfaces.PortDPDS;
-import org.opendatamesh.dpds.utils.ObjectMapperFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,17 +18,19 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
 class PersistenceInterfaceFileSystemImpl implements PersistenceInterface {
-    private static final String OUTPUT_DIR = "ports/output/";
+
+    private final ObjectMapper objectMapper;
+
+    public PersistenceInterfaceFileSystemImpl() {
+        this.objectMapper = new ObjectMapper();
+        configObjectMapper(objectMapper);
+    }
 
     @Override
     public void saveOutputPort(ImportSchemaArguments importSchemaArguments, PortDPDS outputPort) {
         try {
-            ObjectMapper mapper = ObjectMapperFactory.JSON_MAPPER;
-            String outputPortPath = OUTPUT_DIR + outputPort.getName() + "/port.json";
-            outputPort.setRef(outputPortPath);
-            outputPort.setRawContent(" {\"$ref\": \"" + outputPortPath + "\"}");
-            File outputPortFile = new File(importSchemaArguments.getRootDescriptorPath().getParent().toFile(), outputPortPath);
-            String portDefContent = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(outputPort);
+            File outputPortFile = new File(importSchemaArguments.getRootDescriptorPath().getParent().toFile(), outputPort.getRef());
+            String portDefContent = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(outputPort);
             writeFile(outputPortFile.toPath(), portDefContent);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
@@ -35,12 +40,11 @@ class PersistenceInterfaceFileSystemImpl implements PersistenceInterface {
     @Override
     public void saveOutputPortApi(ImportSchemaArguments importSchemaArguments, PortDPDS outputPort, ObjectNode api) {
         try {
-            ObjectMapper mapper = ObjectMapperFactory.JSON_MAPPER;
-            String outputPortApiPath = OUTPUT_DIR + outputPort.getName() + "/api.json";
+            String outputPortApiPath = outputPort.getPromises().getApi().getDefinition().getRef();
             File outputPortApiFile = new File(importSchemaArguments.getRootDescriptorPath().getParent().toFile(), outputPortApiPath);
             writeFile(
                     outputPortApiFile.toPath(),
-                    mapper.writerWithDefaultPrettyPrinter().writeValueAsString(api)
+                    objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(api)
             );
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
@@ -56,5 +60,21 @@ class PersistenceInterfaceFileSystemImpl implements PersistenceInterface {
         } catch (IOException e) {
             throw new RuntimeException("Error writing file: " + filePath, e);
         }
+    }
+
+    private void configObjectMapper(ObjectMapper objectMapper) {
+        objectMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
+        objectMapper.setAnnotationIntrospector(new JacksonAnnotationIntrospector() {
+            @Override
+            public Object findSerializer(Annotated am) {
+                return null;
+            }
+
+            @Override
+            public Object findDeserializer(Annotated am) {
+                return null;
+            }
+        });
     }
 }

@@ -21,7 +21,7 @@ public class ImportSchemaStarterExtensionTest {
         String SUPPORTED_TO = "port";
         Assert.assertTrue(importSchemaExtension.supports(SUPPORTED_FROM, SUPPORTED_TO));
 
-        Map<String, String> internalParameters =  Map.of(
+        Map<String, String> internalParameters = Map.of(
                 "portName", "port_name",
                 "portVersion", "1.0.0",
                 "databaseName", "demo_db",
@@ -29,12 +29,15 @@ public class ImportSchemaStarterExtensionTest {
         );
 
         importSchemaExtension.getExtensionOptions()
-                        .forEach(extensionOption -> {
-                            String key = extensionOption.getNames().stream().findFirst().get().replace("-", "");
-                            extensionOption.getSetter().accept(internalParameters.get(key));
-                        });
+                .forEach(extensionOption -> {
+                    String key = extensionOption.getNames().stream().findFirst().get().replace("-", "");
+                    extensionOption.getSetter().accept(internalParameters.get(key));
+                });
 
-        PortDPDS outputPort = importSchemaExtension.importElement( new ImportSchemaArguments());
+        ImportSchemaArguments arguments = new ImportSchemaArguments();
+        arguments.setParentCommandOptions(Map.of("target", "output-port"));
+
+        PortDPDS outputPort = importSchemaExtension.importElement(arguments);
         PortDPDS expectedOutputPort = new ObjectMapper().readValue(
                 Resources.toByteArray(
                         getClass().getResource("test_import_schema_starter_extension_expected_output.json")

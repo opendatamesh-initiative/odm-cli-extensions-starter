@@ -13,15 +13,18 @@ import org.opendatamesh.dpds.model.interfaces.PortDPDS;
 import org.opendatamesh.dpds.model.interfaces.PromisesDPDS;
 import org.opendatamesh.dpds.utils.ObjectMapperFactory;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 public class ImportSchemaStarterExtension implements ImportSchemaExtension {
-    private final String SUPPORTED_FROM = "jdbc";
-    private final String SUPPORTED_TO = "port";
-    private Map<String, String> parameters = new HashMap<>();
+    private static final String SUPPORTED_FROM = "jdbc";
+    private static final String SUPPORTED_TO = "port";
+    private static final String OUTPUT_DIR = "ports/";
+    private final Map<String, String> parameters = new HashMap<>();
 
     private final PersistenceInterface persistenceInterface;
 
@@ -94,14 +97,14 @@ public class ImportSchemaStarterExtension implements ImportSchemaExtension {
 
     @Override
     public PortDPDS importElement(ImportSchemaArguments importSchemaArguments) {
-        PortDPDS outputPort = initOutputPortFromOutParams();
+        PortDPDS outputPort = initOutputPortFromOutParams(importSchemaArguments);
         persistenceInterface.saveOutputPort(importSchemaArguments, outputPort);
-        ObjectNode api = buildApiObjectNode(importSchemaArguments);
+        ObjectNode api = buildApiObjectNode();
         persistenceInterface.saveOutputPortApi(importSchemaArguments, outputPort, api);
         return outputPort;
     }
 
-    private ObjectNode buildApiObjectNode(ImportSchemaArguments importSchemaArguments) {
+    private ObjectNode buildApiObjectNode() {
         ObjectMapper mapper = ObjectMapperFactory.JSON_MAPPER;
         ObjectNode api = mapper.createObjectNode();
         api.put("datastoreapi", "1.0.0");
@@ -118,10 +121,13 @@ public class ImportSchemaStarterExtension implements ImportSchemaExtension {
         return api;
     }
 
-    private PortDPDS initOutputPortFromOutParams() {
+    private PortDPDS initOutputPortFromOutParams(ImportSchemaArguments importSchemaArguments) {
         PortDPDS outputPort = new PortDPDS();
         outputPort.setName(parameters.get("portName"));
         outputPort.setVersion(parameters.get("portVersion") != null ? parameters.get("portVersion") : "1.0.0");
+        String target = importSchemaArguments.getParentCommandOptions().get("target");
+        Path outputPortPath = Paths.get(OUTPUT_DIR, target, outputPort.getName(), "port.json");
+        outputPort.setRef(outputPortPath.toString());
 
         PromisesDPDS promises = new PromisesDPDS();
         outputPort.setPromises(promises);
@@ -129,12 +135,13 @@ public class ImportSchemaStarterExtension implements ImportSchemaExtension {
         StandardDefinitionDPDS apiStdDef = new StandardDefinitionDPDS();
         promises.setApi(apiStdDef);
         apiStdDef.setSpecification("datastoreapi");
-        apiStdDef.setSpecification("1.0.0");
+        apiStdDef.setSpecificationVersion("1.0.0");
 
         DefinitionReferenceDPDS definition = new DefinitionReferenceDPDS();
         apiStdDef.setDefinition(definition);
         definition.setMediaType("text/json");
-        definition.setRef("api.json");
+        Path definitionPath = Paths.get(OUTPUT_DIR, target, outputPort.getName(), "api.json");
+        definition.setRef(definitionPath.toString());
 
         if (outputPort.getName() == null || outputPort.getName().isEmpty()) {
             outputPort.setName(UUID.randomUUID().toString());
