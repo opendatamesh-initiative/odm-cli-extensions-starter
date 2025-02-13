@@ -1,4 +1,4 @@
-package org.opendatamesh.cli.extensions.starter.importschema;
+package org.opendatamesh.cli.extensionstarter.importschema;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;

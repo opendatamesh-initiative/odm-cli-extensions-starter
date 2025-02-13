@@ -1,4 +1,4 @@
-package org.opendatamesh.cli.extensions.starter.importschema;
+package org.opendatamesh.cli.extensionstarter.importschema;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -48,9 +48,8 @@ public class ImportSchemaStarterExtension implements ImportSchemaExtension {
                 .description("The name of the database")
                 .required(true)
                 .interactive(true)
-                .setter((value) -> {
-                    parameters.put("databaseName", value);
-                })
+                .defaultValueFromConfig("cli.env.custom")
+                .setter(value -> parameters.put("databaseName", value))
                 .getter(() -> parameters.get("databaseName"))
                 .build();
 
@@ -59,9 +58,7 @@ public class ImportSchemaStarterExtension implements ImportSchemaExtension {
                 .description("The name of the schema")
                 .required(true)
                 .interactive(true)
-                .setter((value) -> {
-                    parameters.put("schemaName", value);
-                })
+                .setter(value -> parameters.put("schemaName", value))
                 .getter(() -> parameters.get("schemaName"))
                 .build();
         ExtensionOption name = new ExtensionOption.Builder()
@@ -69,9 +66,7 @@ public class ImportSchemaStarterExtension implements ImportSchemaExtension {
                 .description("The name of the port")
                 .required(true)
                 .interactive(true)
-                .setter((value) -> {
-                    parameters.put("portName", value);
-                })
+                .setter(value -> parameters.put("portName", value))
                 .getter(() -> parameters.get("portName"))
                 .build();
         ExtensionOption version = new ExtensionOption.Builder()
@@ -79,9 +74,7 @@ public class ImportSchemaStarterExtension implements ImportSchemaExtension {
                 .description("The version of the port")
                 .required(true)
                 .interactive(true)
-                .setter((value) -> {
-                    parameters.put("portVersion", value);
-                })
+                .setter(value -> parameters.put("portVersion", value))
                 .getter(() -> parameters.get("portVersion"))
                 .build();
         return List.of(databaseName, schemaName, name, version);
@@ -110,10 +103,10 @@ public class ImportSchemaStarterExtension implements ImportSchemaExtension {
         api.put("datastoreapi", "1.0.0");
         ObjectNode schema = mapper.createObjectNode();
         if (parameters.containsKey("databaseName")) {
-            schema.put("databaseName", parameters.get("database"));
+            schema.put("databaseName", parameters.get("databaseName"));
         }
         if (parameters.containsKey("schemaName")) {
-            schema.put("schemaName", parameters.get("schema"));
+            schema.put("schemaName", parameters.get("schemaName"));
         }
         ArrayNode tables = mapper.createArrayNode();
         schema.set("tables", tables);

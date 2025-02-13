@@ -1,4 +1,4 @@
-package org.opendatamesh.cli.extensions.starter.importschema;
+package org.opendatamesh.cli.extensionstarter.importschema;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.Resources;
