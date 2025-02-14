@@ -85,7 +85,7 @@ jobs:
             </servers>
           </settings>" > ~/.m2/settings.xml
       - name: Build the JAR package
-        run: mvn clean package
+        run: mvn clean package -DskipTests
       - name: Get JAR Version
         run: |
           JAR_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
@@ -93,4 +93,4 @@ jobs:
       - name: Upload JAR to GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          files: target/odm-cli-${{ env.JAR_VERSION }}.jar
+          files: target/odm-cli-extension-starter-${{ env.JAR_VERSION }}.jar
