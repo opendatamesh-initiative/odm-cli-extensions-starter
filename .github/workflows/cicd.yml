@@ -93,4 +93,4 @@ jobs:
       - name: Upload JAR to GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          files: target/odm-cli-extension-starter-${{ env.JAR_VERSION }}.jar
+          files: target/odm-cli-extensions-starter-${{ env.JAR_VERSION }}.jar
