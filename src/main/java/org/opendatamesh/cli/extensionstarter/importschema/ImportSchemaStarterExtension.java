@@ -26,16 +26,6 @@ public class ImportSchemaStarterExtension implements ImportSchemaExtension {
     private static final String OUTPUT_DIR = "ports/";
     private final Map<String, String> parameters = new HashMap<>();
 
-    private final PersistenceInterface persistenceInterface;
-
-    public ImportSchemaStarterExtension() {
-        this.persistenceInterface = new PersistenceInterfaceFileSystemImpl();
-    }
-
-    ImportSchemaStarterExtension(PersistenceInterface persistenceInterface) {
-        this.persistenceInterface = persistenceInterface;
-    }
-
     @Override
     public boolean supports(String from, String to) {
         return SUPPORTED_FROM.equalsIgnoreCase(from) && SUPPORTED_TO.equalsIgnoreCase(to);
@@ -91,9 +81,8 @@ public class ImportSchemaStarterExtension implements ImportSchemaExtension {
     @Override
     public PortDPDS importElement(ImportSchemaArguments importSchemaArguments) {
         PortDPDS outputPort = initOutputPortFromOutParams(importSchemaArguments);
-        persistenceInterface.saveOutputPort(importSchemaArguments, outputPort);
         ObjectNode api = buildApiObjectNode();
-        persistenceInterface.saveOutputPortApi(importSchemaArguments, outputPort, api);
+        outputPort.getPromises().getApi().setDefinition(api);
         return outputPort;
     }
 
