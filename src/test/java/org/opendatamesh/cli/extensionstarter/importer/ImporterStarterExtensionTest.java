@@ -1,7 +1,5 @@
 package org.opendatamesh.cli.extensionstarter.importer;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.io.Resources;
 import org.junit.Assert;
 import org.junit.Test;
 import org.opendatamesh.cli.extensions.importer.ImporterArguments;
@@ -18,7 +16,7 @@ import java.util.Map;
 public class ImporterStarterExtensionTest {
     @Test
     public void testImportSchemaStarterExtension() throws IOException {
-        ImporterExtension importSchemaExtension = new ImporterStarterExtension(new PersistenceInterfaceMock());
+        ImporterExtension importSchemaExtension = new ImporterStarterExtension();
         String SUPPORTED_FROM = "jdbc";
         String SUPPORTED_TO = "output-port";
         Assert.assertTrue(importSchemaExtension.supports(SUPPORTED_FROM, SUPPORTED_TO));

@@ -26,14 +26,8 @@ public class ImporterStarterExtension implements ImporterExtension<PortDPDS> {
     private static final String OUTPUT_DIR = "ports/";
     private final Map<String, String> parameters = new HashMap<>();
 
-    private final PersistenceInterface persistenceInterface;
 
     public ImporterStarterExtension() {
-        this.persistenceInterface = new PersistenceInterfaceFileSystemImpl();
-    }
-
-    ImporterStarterExtension(PersistenceInterface persistenceInterface) {
-        this.persistenceInterface = persistenceInterface;
     }
 
     @Override
@@ -96,7 +90,7 @@ public class ImporterStarterExtension implements ImporterExtension<PortDPDS> {
 
     @Override
     public PortDPDS importElement(PortDPDS portDPDS, ImporterArguments ImporterArguments) {
-        PortDPDS outputPort = initOutputPortFromOutParams(importSchemaArguments);
+        PortDPDS outputPort = initOutputPortFromOutParams(ImporterArguments);
         ObjectNode api = buildApiObjectNode();
         outputPort.getPromises().getApi().setDefinition(api);
         return outputPort;
