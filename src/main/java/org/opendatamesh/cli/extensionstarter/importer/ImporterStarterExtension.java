@@ -1,12 +1,12 @@
-package org.opendatamesh.cli.extensionstarter.importschema;
+package org.opendatamesh.cli.extensionstarter.importer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.opendatamesh.cli.extensions.ExtensionInfo;
 import org.opendatamesh.cli.extensions.ExtensionOption;
-import org.opendatamesh.cli.extensions.importschema.ImportSchemaArguments;
-import org.opendatamesh.cli.extensions.importschema.ImportSchemaExtension;
+import org.opendatamesh.cli.extensions.importer.ImporterArguments;
+import org.opendatamesh.cli.extensions.importer.ImporterExtension;
 import org.opendatamesh.dpds.model.core.StandardDefinitionDPDS;
 import org.opendatamesh.dpds.model.definitions.DefinitionReferenceDPDS;
 import org.opendatamesh.dpds.model.interfaces.PortDPDS;
@@ -20,25 +20,31 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-public class ImportSchemaStarterExtension implements ImportSchemaExtension {
+public class ImporterStarterExtension implements ImporterExtension<PortDPDS> {
     private static final String SUPPORTED_FROM = "jdbc";
-    private static final String SUPPORTED_TO = "port";
+    private static final String SUPPORTED_TO = "output-port";
     private static final String OUTPUT_DIR = "ports/";
     private final Map<String, String> parameters = new HashMap<>();
 
     private final PersistenceInterface persistenceInterface;
 
-    public ImportSchemaStarterExtension() {
+    public ImporterStarterExtension() {
         this.persistenceInterface = new PersistenceInterfaceFileSystemImpl();
     }
 
-    ImportSchemaStarterExtension(PersistenceInterface persistenceInterface) {
+    ImporterStarterExtension(PersistenceInterface persistenceInterface) {
         this.persistenceInterface = persistenceInterface;
     }
 
     @Override
     public boolean supports(String from, String to) {
         return SUPPORTED_FROM.equalsIgnoreCase(from) && SUPPORTED_TO.equalsIgnoreCase(to);
+    }
+
+
+    @Override
+    public Class<PortDPDS> getTargetClass() {
+        return PortDPDS.class;
     }
 
     @Override
@@ -89,11 +95,11 @@ public class ImportSchemaStarterExtension implements ImportSchemaExtension {
 
 
     @Override
-    public PortDPDS importElement(ImportSchemaArguments importSchemaArguments) {
-        PortDPDS outputPort = initOutputPortFromOutParams(importSchemaArguments);
-        persistenceInterface.saveOutputPort(importSchemaArguments, outputPort);
+    public PortDPDS importElement(PortDPDS portDPDS, ImporterArguments ImporterArguments) {
+        PortDPDS outputPort = initOutputPortFromOutParams(ImporterArguments);
+        persistenceInterface.saveOutputPort(ImporterArguments, outputPort);
         ObjectNode api = buildApiObjectNode();
-        persistenceInterface.saveOutputPortApi(importSchemaArguments, outputPort, api);
+        persistenceInterface.saveOutputPortApi(ImporterArguments, outputPort, api);
         return outputPort;
     }
 
@@ -114,11 +120,11 @@ public class ImportSchemaStarterExtension implements ImportSchemaExtension {
         return api;
     }
 
-    private PortDPDS initOutputPortFromOutParams(ImportSchemaArguments importSchemaArguments) {
+    private PortDPDS initOutputPortFromOutParams(ImporterArguments ImporterArguments) {
         PortDPDS outputPort = new PortDPDS();
         outputPort.setName(parameters.get("portName"));
         outputPort.setVersion(parameters.get("portVersion") != null ? parameters.get("portVersion") : "1.0.0");
-        String target = importSchemaArguments.getParentCommandOptions().get("target");
+        String target = ImporterArguments.getParentCommandOptions().get("target");
         Path outputPortPath = Paths.get(OUTPUT_DIR, target, outputPort.getName(), "port.json");
         outputPort.setRef(outputPortPath.toString());
 

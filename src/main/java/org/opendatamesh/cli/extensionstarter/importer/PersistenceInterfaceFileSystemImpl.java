@@ -1,4 +1,4 @@
-package org.opendatamesh.cli.extensionstarter.importschema;
+package org.opendatamesh.cli.extensionstarter.importer;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.introspect.Annotated;
 import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.opendatamesh.cli.extensions.importschema.ImportSchemaArguments;
+import org.opendatamesh.cli.extensions.importer.ImporterArguments;
 import org.opendatamesh.dpds.model.interfaces.PortDPDS;
 
 import java.io.File;
@@ -27,9 +27,9 @@ class PersistenceInterfaceFileSystemImpl implements PersistenceInterface {
     }
 
     @Override
-    public void saveOutputPort(ImportSchemaArguments importSchemaArguments, PortDPDS outputPort) {
+    public void saveOutputPort(ImporterArguments ImporterArguments, PortDPDS outputPort) {
         try {
-            File outputPortFile = new File(importSchemaArguments.getRootDescriptorPath().getParent().toFile(), outputPort.getRef());
+            File outputPortFile = new File(ImporterArguments.getRootDescriptorPath().getParent().toFile(), outputPort.getRef());
             String portDefContent = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(outputPort);
             writeFile(outputPortFile.toPath(), portDefContent);
         } catch (JsonProcessingException e) {
@@ -38,10 +38,10 @@ class PersistenceInterfaceFileSystemImpl implements PersistenceInterface {
     }
 
     @Override
-    public void saveOutputPortApi(ImportSchemaArguments importSchemaArguments, PortDPDS outputPort, ObjectNode api) {
+    public void saveOutputPortApi(ImporterArguments ImporterArguments, PortDPDS outputPort, ObjectNode api) {
         try {
             String outputPortApiPath = outputPort.getPromises().getApi().getDefinition().getRef();
-            File outputPortApiFile = new File(importSchemaArguments.getRootDescriptorPath().getParent().toFile(), outputPortApiPath);
+            File outputPortApiFile = new File(ImporterArguments.getRootDescriptorPath().getParent().toFile(), outputPortApiPath);
             writeFile(
                     outputPortApiFile.toPath(),
                     objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(api)
