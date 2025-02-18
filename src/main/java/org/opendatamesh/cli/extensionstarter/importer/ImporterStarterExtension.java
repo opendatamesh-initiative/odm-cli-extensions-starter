@@ -96,10 +96,9 @@ public class ImporterStarterExtension implements ImporterExtension<PortDPDS> {
 
     @Override
     public PortDPDS importElement(PortDPDS portDPDS, ImporterArguments ImporterArguments) {
-        PortDPDS outputPort = initOutputPortFromOutParams(ImporterArguments);
-        persistenceInterface.saveOutputPort(ImporterArguments, outputPort);
+        PortDPDS outputPort = initOutputPortFromOutParams(importSchemaArguments);
         ObjectNode api = buildApiObjectNode();
-        persistenceInterface.saveOutputPortApi(ImporterArguments, outputPort, api);
+        outputPort.getPromises().getApi().setDefinition(api);
         return outputPort;
     }
 

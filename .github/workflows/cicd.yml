@@ -51,14 +51,13 @@ jobs:
             </servers>
           </settings>" > ~/.m2/settings.xml
       - name: Execute tests with Maven
-        run: mvn -B test -Dspring.profiles.active=test
+        run: mvn -B test
 
   deploy-jar:
     runs-on: ubuntu-latest
     needs: verify-version
     permissions:
-      contents: read
-      packages: write
+      contents: write
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
@@ -86,9 +85,12 @@ jobs:
             </servers>
           </settings>" > ~/.m2/settings.xml
       - name: Build the JAR package
-        run: mvn clean package
-      - name: Upload JAR Artifact
-        uses: actions/upload-artifact@v4
+        run: mvn clean package -DskipTests
+      - name: Get JAR Version
+        run: |
+          JAR_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          echo "JAR_VERSION=${JAR_VERSION}" >> $GITHUB_ENV
+      - name: Upload JAR to GitHub Release
+        uses: softprops/action-gh-release@v1
         with:
-          name: odm-cli-extensions-starter-${{ env.MAVEN_VERSION }}.jar
-          path: target/*.jar
+          files: target/odm-cli-extensions-starter-${{ env.JAR_VERSION }}.jar
