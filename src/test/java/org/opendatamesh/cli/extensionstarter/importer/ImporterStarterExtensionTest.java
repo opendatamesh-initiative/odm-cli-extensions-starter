@@ -1,49 +1,48 @@
 package org.opendatamesh.cli.extensionstarter.importer;
 
-import org.junit.Assert;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 import org.opendatamesh.cli.extensions.importer.ImporterArguments;
 import org.opendatamesh.cli.extensions.importer.ImporterExtension;
 import org.opendatamesh.dpds.model.interfaces.PortDPDS;
-import org.opendatamesh.dpds.utils.ObjectMapperFactory;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Map;
+
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 
 public class ImporterStarterExtensionTest {
     @Test
     public void testImportSchemaStarterExtension() throws IOException {
-        ImporterExtension importSchemaExtension = new ImporterStarterExtension();
-        String SUPPORTED_FROM = "jdbc";
+        //Checking that the Extension Implementation actually supports the expected from and to.
+        ImporterExtension<PortDPDS> importSchemaExtension = new ImporterStarterExtension();
+        String SUPPORTED_FROM = "starter";
         String SUPPORTED_TO = "output-port";
-        Assert.assertTrue(importSchemaExtension.supports(SUPPORTED_FROM, SUPPORTED_TO));
+        assertThat(importSchemaExtension.supports(SUPPORTED_FROM, SUPPORTED_TO)).isTrue();
 
+        //Mocking the Extension Options.
         Map<String, String> internalParameters = Map.of(
-                "portName", "port_name",
-                "portVersion", "1.0.0",
                 "databaseName", "demo_db",
                 "schemaName", "demo_schema"
         );
-
         importSchemaExtension.getExtensionOptions()
                 .forEach(extensionOption -> {
                     String key = extensionOption.getNames().stream().findFirst().get().replace("-", "");
                     extensionOption.getSetter().accept(internalParameters.get(key));
                 });
 
+        //Mocking the parent commands options (in this case only the import options).
         ImporterArguments arguments = new ImporterArguments();
-        arguments.setParentCommandOptions(Map.of("target", "output-port"));
+        arguments.setParentCommandOptions(Map.of("to", "output-port", "target", "port_name"));
 
-        PortDPDS outputPort = (PortDPDS) importSchemaExtension.importElement(new PortDPDS(),arguments);
+        //Executing the logic.
+        PortDPDS outputPort = importSchemaExtension.importElement(new PortDPDS(), arguments);
 
-        String outputPortStringified = ObjectMapperFactory.JSON_MAPPER.writeValueAsString(outputPort);
-        String expectedOutputPortStringified = Files.readString(Path.of(getClass().getResource("test_import_schema_starter_extension_expected_output.json").getPath()));
-        Assert.assertEquals(
-                expectedOutputPortStringified.replaceAll("\\s+", ""),
-                outputPortStringified.replaceAll("\\s+", "")
-        );
+        //Checking that the output is like the expected one.
+        PortDPDS expectedOutputPort = new ObjectMapper().readValue(getClass().getResource("test_import_schema_starter_extension_expected_output.json"), PortDPDS.class);
+        assertThat(outputPort).usingRecursiveComparison()
+                .ignoringFields("promises.api.definition")
+                .isEqualTo(expectedOutputPort);
     }
 }

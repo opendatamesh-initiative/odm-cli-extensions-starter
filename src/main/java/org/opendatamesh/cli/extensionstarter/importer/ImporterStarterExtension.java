@@ -8,10 +8,8 @@ import org.opendatamesh.cli.extensions.ExtensionOption;
 import org.opendatamesh.cli.extensions.importer.ImporterArguments;
 import org.opendatamesh.cli.extensions.importer.ImporterExtension;
 import org.opendatamesh.dpds.model.core.StandardDefinitionDPDS;
-import org.opendatamesh.dpds.model.definitions.DefinitionReferenceDPDS;
 import org.opendatamesh.dpds.model.interfaces.PortDPDS;
 import org.opendatamesh.dpds.model.interfaces.PromisesDPDS;
-import org.opendatamesh.dpds.utils.ObjectMapperFactory;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -21,8 +19,8 @@ import java.util.Map;
 import java.util.UUID;
 
 public class ImporterStarterExtension implements ImporterExtension<PortDPDS> {
-    private static final String SUPPORTED_FROM = "jdbc";
-    private static final String SUPPORTED_TO = "output-port";
+    private static final String SUPPORTED_FROM = "starter";
+    private static final String SUPPORTED_TO = "port";
     private static final String OUTPUT_DIR = "ports/";
     private final Map<String, String> parameters = new HashMap<>();
 
@@ -32,23 +30,26 @@ public class ImporterStarterExtension implements ImporterExtension<PortDPDS> {
 
     @Override
     public boolean supports(String from, String to) {
-        return SUPPORTED_FROM.equalsIgnoreCase(from) && SUPPORTED_TO.equalsIgnoreCase(to);
+        return SUPPORTED_FROM.equalsIgnoreCase(from) &&
+                //Supporting all types of ports
+                to.toLowerCase().endsWith(SUPPORTED_TO);
     }
 
 
     @Override
     public Class<PortDPDS> getTargetClass() {
+        //What is the class type of the entity being imported.
         return PortDPDS.class;
     }
 
     @Override
     public List<ExtensionOption> getExtensionOptions() {
+        //The additional command options required by this extension implementation
         ExtensionOption databaseName = new ExtensionOption.Builder()
                 .names("--databaseName")
                 .description("The name of the database")
                 .required(true)
                 .interactive(true)
-                .defaultValueFromConfig("cli.env.custom")
                 .setter(value -> parameters.put("databaseName", value))
                 .getter(() -> parameters.get("databaseName"))
                 .build();
@@ -61,43 +62,69 @@ public class ImporterStarterExtension implements ImporterExtension<PortDPDS> {
                 .setter(value -> parameters.put("schemaName", value))
                 .getter(() -> parameters.get("schemaName"))
                 .build();
-        ExtensionOption name = new ExtensionOption.Builder()
-                .names("--portName")
-                .description("The name of the port")
-                .required(true)
-                .interactive(true)
-                .setter(value -> parameters.put("portName", value))
-                .getter(() -> parameters.get("portName"))
-                .build();
-        ExtensionOption version = new ExtensionOption.Builder()
-                .names("--portVersion")
-                .description("The version of the port")
-                .required(true)
-                .interactive(true)
-                .setter(value -> parameters.put("portVersion", value))
-                .getter(() -> parameters.get("portVersion"))
-                .build();
-        return List.of(databaseName, schemaName, name, version);
+
+        return List.of(databaseName, schemaName);
     }
 
     @Override
     public ExtensionInfo getExtensionInfo() {
+        //The metadata information of this extension implementation
+        //This includes a short description of the extension
         return new ExtensionInfo.Builder()
-                .description("Extension to import a simple output port")
+                .description("Extension to import a simple port")
                 .build();
     }
 
 
     @Override
-    public PortDPDS importElement(PortDPDS portDPDS, ImporterArguments ImporterArguments) {
-        PortDPDS outputPort = initOutputPortFromOutParams(ImporterArguments);
-        ObjectNode api = buildApiObjectNode();
-        outputPort.getPromises().getApi().setDefinition(api);
+    public PortDPDS importElement(PortDPDS port, ImporterArguments importerArguments) {
+        //The logic to import the element
+        PortDPDS outputPort = initPort(port, importerArguments);
+        ObjectNode schema = buildPortSchema();
+        outputPort.getPromises().getApi().setDefinition(schema);
         return outputPort;
     }
 
-    private ObjectNode buildApiObjectNode() {
-        ObjectMapper mapper = ObjectMapperFactory.JSON_MAPPER;
+    private PortDPDS initPort(PortDPDS port, ImporterArguments importerArguments) {
+        if (port == null) {
+            port = new PortDPDS();
+        }
+        if (port.getName() == null) {
+            String target = importerArguments.getParentCommandOptions().get("target");
+            port.setName(target);
+            if (target == null) {
+                port.setName(UUID.randomUUID().toString());
+            }
+        }
+        if (port.getVersion() == null) {
+            port.setVersion("1.0.0");
+        }
+
+        //Setting the reference of the port.
+        //In the cli, if the save-format is set to NORMALIZED, all the content of the port will
+        //be saved in a file located at this path
+        String toOption = importerArguments.getParentCommandOptions().get("to");
+        Path outputPortPath = Paths.get(OUTPUT_DIR, toOption, port.getName(), "port.json");
+        port.setRef(outputPortPath.toString());
+
+        PromisesDPDS promises = new PromisesDPDS();
+        port.setPromises(promises);
+        StandardDefinitionDPDS apiStdDef = new StandardDefinitionDPDS();
+        promises.setApi(apiStdDef);
+        apiStdDef.setSpecification("datastoreapi");
+        apiStdDef.setSpecificationVersion("1.0.0");
+
+        return port;
+    }
+
+    private ObjectNode buildPortSchema() {
+        //Building the schema of the port
+        //following the DatastoreApi specification
+
+        //The schema can either be a Json Object
+        //or can be a DefinitionReferenceDPDS object pointing
+        //to an existing file.
+        ObjectMapper mapper = new ObjectMapper();
         ObjectNode api = mapper.createObjectNode();
         api.put("datastoreapi", "1.0.0");
         ObjectNode schema = mapper.createObjectNode();
@@ -111,33 +138,5 @@ public class ImporterStarterExtension implements ImporterExtension<PortDPDS> {
         schema.set("tables", tables);
         api.set("schema", schema);
         return api;
-    }
-
-    private PortDPDS initOutputPortFromOutParams(ImporterArguments ImporterArguments) {
-        PortDPDS outputPort = new PortDPDS();
-        outputPort.setName(parameters.get("portName"));
-        outputPort.setVersion(parameters.get("portVersion") != null ? parameters.get("portVersion") : "1.0.0");
-        String target = ImporterArguments.getParentCommandOptions().get("target");
-        Path outputPortPath = Paths.get(OUTPUT_DIR, target, outputPort.getName(), "port.json");
-        outputPort.setRef(outputPortPath.toString());
-
-        PromisesDPDS promises = new PromisesDPDS();
-        outputPort.setPromises(promises);
-
-        StandardDefinitionDPDS apiStdDef = new StandardDefinitionDPDS();
-        promises.setApi(apiStdDef);
-        apiStdDef.setSpecification("datastoreapi");
-        apiStdDef.setSpecificationVersion("1.0.0");
-
-        DefinitionReferenceDPDS definition = new DefinitionReferenceDPDS();
-        apiStdDef.setDefinition(definition);
-        definition.setMediaType("text/json");
-        Path definitionPath = Paths.get(OUTPUT_DIR, target, outputPort.getName(), "api.json");
-        definition.setRef(definitionPath.toString());
-
-        if (outputPort.getName() == null || outputPort.getName().isEmpty()) {
-            outputPort.setName(UUID.randomUUID().toString());
-        }
-        return outputPort;
     }
 }
