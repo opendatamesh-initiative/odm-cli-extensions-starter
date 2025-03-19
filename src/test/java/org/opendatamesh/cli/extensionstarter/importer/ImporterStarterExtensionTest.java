@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 import org.opendatamesh.cli.extensions.importer.ImporterArguments;
 import org.opendatamesh.cli.extensions.importer.ImporterExtension;
-import org.opendatamesh.dpds.model.interfaces.PortDPDS;
+import org.opendatamesh.dpds.model.interfaces.Port;
 
 import java.io.IOException;
 import java.util.Map;
@@ -16,7 +16,7 @@ public class ImporterStarterExtensionTest {
     @Test
     public void testImportSchemaStarterExtension() throws IOException {
         //Checking that the Extension Implementation actually supports the expected from and to.
-        ImporterExtension<PortDPDS> importSchemaExtension = new ImporterStarterExtension();
+        ImporterExtension<Port> importSchemaExtension = new ImporterStarterExtension();
         String SUPPORTED_FROM = "starter";
         String SUPPORTED_TO = "output-port";
         assertThat(importSchemaExtension.supports(SUPPORTED_FROM, SUPPORTED_TO)).isTrue();
@@ -37,12 +37,11 @@ public class ImporterStarterExtensionTest {
         arguments.setParentCommandOptions(Map.of("to", "output-port", "target", "port_name"));
 
         //Executing the logic.
-        PortDPDS outputPort = importSchemaExtension.importElement(new PortDPDS(), arguments);
+        Port outputPort = importSchemaExtension.importElement(new Port(), arguments);
 
         //Checking that the output is like the expected one.
-        PortDPDS expectedOutputPort = new ObjectMapper().readValue(getClass().getResource("test_import_schema_starter_extension_expected_output.json"), PortDPDS.class);
+        Port expectedOutputPort = new ObjectMapper().readValue(getClass().getResource("test_import_schema_starter_extension_expected_output.json"), Port.class);
         assertThat(outputPort).usingRecursiveComparison()
-                .ignoringFields("promises.api.definition")
                 .isEqualTo(expectedOutputPort);
     }
 }

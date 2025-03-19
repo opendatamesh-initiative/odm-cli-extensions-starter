@@ -1,5 +1,6 @@
 package org.opendatamesh.cli.extensionstarter.importer;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -7,9 +8,10 @@ import org.opendatamesh.cli.extensions.ExtensionInfo;
 import org.opendatamesh.cli.extensions.ExtensionOption;
 import org.opendatamesh.cli.extensions.importer.ImporterArguments;
 import org.opendatamesh.cli.extensions.importer.ImporterExtension;
-import org.opendatamesh.dpds.model.core.StandardDefinitionDPDS;
-import org.opendatamesh.dpds.model.interfaces.PortDPDS;
-import org.opendatamesh.dpds.model.interfaces.PromisesDPDS;
+import org.opendatamesh.dpds.model.core.ComponentBase;
+import org.opendatamesh.dpds.model.core.StandardDefinition;
+import org.opendatamesh.dpds.model.interfaces.Port;
+import org.opendatamesh.dpds.model.interfaces.Promises;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -18,7 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-public class ImporterStarterExtension implements ImporterExtension<PortDPDS> {
+public class ImporterStarterExtension implements ImporterExtension<Port> {
     private static final String SUPPORTED_FROM = "starter";
     private static final String SUPPORTED_TO = "port";
     private static final String OUTPUT_DIR = "ports/";
@@ -37,9 +39,9 @@ public class ImporterStarterExtension implements ImporterExtension<PortDPDS> {
 
 
     @Override
-    public Class<PortDPDS> getTargetClass() {
+    public Class<Port> getTargetClass() {
         //What is the class type of the entity being imported.
-        return PortDPDS.class;
+        return Port.class;
     }
 
     @Override
@@ -77,17 +79,21 @@ public class ImporterStarterExtension implements ImporterExtension<PortDPDS> {
 
 
     @Override
-    public PortDPDS importElement(PortDPDS port, ImporterArguments importerArguments) {
+    public Port importElement(Port port, ImporterArguments importerArguments) {
         //The logic to import the element
-        PortDPDS outputPort = initPort(port, importerArguments);
+        Port outputPort = initPort(port, importerArguments);
         ObjectNode schema = buildPortSchema();
-        outputPort.getPromises().getApi().setDefinition(schema);
+        try {
+            outputPort.getPromises().getApi().setDefinition(new ObjectMapper().treeToValue(schema, ComponentBase.class));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
         return outputPort;
     }
 
-    private PortDPDS initPort(PortDPDS port, ImporterArguments importerArguments) {
+    private Port initPort(Port port, ImporterArguments importerArguments) {
         if (port == null) {
-            port = new PortDPDS();
+            port = new Port();
         }
         if (port.getName() == null) {
             String target = importerArguments.getParentCommandOptions().get("target");
@@ -107,9 +113,9 @@ public class ImporterStarterExtension implements ImporterExtension<PortDPDS> {
         Path outputPortPath = Paths.get(OUTPUT_DIR, toOption, port.getName(), "port.json");
         port.setRef(outputPortPath.toString());
 
-        PromisesDPDS promises = new PromisesDPDS();
+        Promises promises = new Promises();
         port.setPromises(promises);
-        StandardDefinitionDPDS apiStdDef = new StandardDefinitionDPDS();
+        StandardDefinition apiStdDef = new StandardDefinition();
         promises.setApi(apiStdDef);
         apiStdDef.setSpecification("datastoreapi");
         apiStdDef.setSpecificationVersion("1.0.0");
@@ -122,7 +128,7 @@ public class ImporterStarterExtension implements ImporterExtension<PortDPDS> {
         //following the DatastoreApi specification
 
         //The schema can either be a Json Object
-        //or can be a DefinitionReferenceDPDS object pointing
+        //or can be a DefinitionReference object pointing
         //to an existing file.
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode api = mapper.createObjectNode();

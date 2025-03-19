@@ -1,12 +1,10 @@
 {
-  "externalReference": true,
   "name": "port_name",
   "version": "1.0.0",
   "$ref": "ports/output-port/port_name/port.json",
   "tags": [],
   "promises": {
     "api": {
-      "externalReference": false,
       "tags": [],
       "specification": "datastoreapi",
       "specificationVersion": "1.0.0",
