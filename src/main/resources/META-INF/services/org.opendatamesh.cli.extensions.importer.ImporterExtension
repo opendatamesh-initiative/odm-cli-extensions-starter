@@ -1,1 +1,2 @@
 org.opendatamesh.cli.extensionstarter.importer.ImporterStarterExtension
+org.opendatamesh.cli.extensionstarter.importer.ImporterDescriptorStarterExtension
